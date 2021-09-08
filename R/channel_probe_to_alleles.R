@@ -4,7 +4,7 @@
 #' @param top_n Only take `top_n` rows, if `0` (default), take all rows
 #' 
 #' @export
-call_alleles <- function(annotated_manifest, top_n) {
+channel_probe_to_alleles <- function(annotated_manifest, top_n = 0) {
   stopifnot("AddressA_ID" %in% colnames(annotated_manifest))
   stopifnot("AddressB_ID" %in% colnames(annotated_manifest))
   
@@ -30,5 +30,8 @@ call_alleles <- function(annotated_manifest, top_n) {
   stopifnot("B_Grn_SD" %in% colnames(annotated_manifest))
   stopifnot("B_Grn_NBeads" %in% colnames(annotated_manifest))
   
-  call_alleles_engine(annotated_manifest, top_n)
+  l <- channel_probe_to_alleles_engine(annotated_manifest, top_n)
+  d <- as.data.frame(l)
+  
+  return(d)
 }

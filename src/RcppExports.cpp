@@ -10,21 +10,21 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// call_alleles_engine
-Rcpp::List call_alleles_engine(Rcpp::DataFrame d, int top_n);
-RcppExport SEXP _snpbeadchip_call_alleles_engine(SEXP dSEXP, SEXP top_nSEXP) {
+// channel_probe_to_alleles_engine
+Rcpp::List channel_probe_to_alleles_engine(Rcpp::DataFrame& d, size_t top_n);
+RcppExport SEXP _snpbeadchip_channel_probe_to_alleles_engine(SEXP dSEXP, SEXP top_nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type d(dSEXP);
-    Rcpp::traits::input_parameter< int >::type top_n(top_nSEXP);
-    rcpp_result_gen = Rcpp::wrap(call_alleles_engine(d, top_n));
+    Rcpp::traits::input_parameter< Rcpp::DataFrame& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< size_t >::type top_n(top_nSEXP);
+    rcpp_result_gen = Rcpp::wrap(channel_probe_to_alleles_engine(d, top_n));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_snpbeadchip_call_alleles_engine", (DL_FUNC) &_snpbeadchip_call_alleles_engine, 2},
+    {"_snpbeadchip_channel_probe_to_alleles_engine", (DL_FUNC) &_snpbeadchip_channel_probe_to_alleles_engine, 2},
     {NULL, NULL, 0}
 };
 

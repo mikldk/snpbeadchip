@@ -5,21 +5,6 @@
 using namespace Rcpp;
 
 // [[Rcpp::plugins("cpp11")]]
-/*
-inline std::string base_colour(std::string base) {
-  if (base == "A") {
-    return "Red";
-  } else if (base == "T") {
-    return "Red";
-  } else if (base == "G") {
-    return "Grn";
-  } else if (base == "C") {
-    return "Grn";
-  }
-  
-  Rcpp::stop("Unknown base to get colour from");
-} 
-*/
 
 inline bool is_base_colour_red(std::string base) {
   if (base == "A" || base == "T") {
@@ -35,28 +20,34 @@ inline std::string compl_base(std::string base) {
     return "T";
   } else if (base == "T") {
     return "A";
-  } else if (base == "G") {
-    return "C";
   } else if (base == "C") {
     return "G";
+  } else if (base == "G") {
+    return "C";
   }
   
-  Rcpp::stop("Unknown base to get complementary base of");
+  Rcpp::print(Rcpp::wrap(base));
+  Rcpp::stop("Unknown base ^ to get complementary base of");
 } 
 
 
 inline std::string to_upper(std::string base) {
+  if (base == "A" || base == "T" || base == "C" || base == "G") {
+    return base;
+  }
+  
   if (base == "a") {
     return "A";
   } else if (base == "t") {
     return "T";
-  } else if (base == "g") {
-    return "G";
   } else if (base == "c") {
     return "C";
+  } else if (base == "g") {
+    return "G";
   }
   
-  Rcpp::stop("Unknown lower-case base to convert to upper-case");
+  Rcpp::print(Rcpp::wrap(base));
+  Rcpp::stop("Unknown lower-case base ^ to convert to upper-case");
 } 
 
 // [[Rcpp::export]]

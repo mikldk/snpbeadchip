@@ -1,4 +1,4 @@
-#' Call alleles
+#' Channel probe to alleles
 #' 
 #' @param d Manifest annotated with idat e.g. from [annotate_manifest_with_idat()]
 #' @param top_n Only take `top_n` rows, if `0` (default), take all rows

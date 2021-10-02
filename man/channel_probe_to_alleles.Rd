@@ -2,7 +2,7 @@
 % Please edit documentation in R/channel_probe_to_alleles.R
 \name{channel_probe_to_alleles}
 \alias{channel_probe_to_alleles}
-\title{Call alleles}
+\title{Channel probe to alleles}
 \usage{
 channel_probe_to_alleles(annotated_manifest, top_n = 0)
 }
@@ -12,5 +12,5 @@ channel_probe_to_alleles(annotated_manifest, top_n = 0)
 \item{d}{Manifest annotated with idat e.g. from \code{\link[=annotate_manifest_with_idat]{annotate_manifest_with_idat()}}}
 }
 \description{
-Call alleles
+Channel probe to alleles
 }

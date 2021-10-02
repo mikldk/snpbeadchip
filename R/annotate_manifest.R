@@ -7,10 +7,10 @@
 annotate_manifest_with_idat <- function(manifest, idat) {
   stopifnot("AddressA_ID" %in% colnames(manifest))
   stopifnot("AddressB_ID" %in% colnames(manifest))
-  stopifnot(!("Name" %in% colnames(manifest)))
+  stopifnot("Name" %in% colnames(manifest))
   
   
-  stopifnot("Name" %in% colnames(idat))
+  stopifnot("Address_ID" %in% colnames(idat))
   stopifnot("Red_Mean" %in% colnames(idat))
   stopifnot("Red_SD" %in% colnames(idat))
   stopifnot("Red_NBeads" %in% colnames(idat))
@@ -25,16 +25,16 @@ annotate_manifest_with_idat <- function(manifest, idat) {
   
   #############
   
-  idat_intensities <- idat[, c("Name", "Red_Mean", "Red_SD", "Red_NBeads", "Grn_Mean", "Grn_SD", "Grn_NBeads")]
+  idat_intensities <- idat[, c("Address_ID", "Red_Mean", "Red_SD", "Red_NBeads", "Grn_Mean", "Grn_SD", "Grn_NBeads")]
   
-  setkey(idat_intensities, Name)
+  setkey(idat_intensities, Address_ID)
   
   #############
   
   setkey(manifest, AddressA_ID)
   m_idat_A <- idat_intensities[manifest]
   
-  setnames(m_idat_A, "Name", "AddressA_ID")
+  setnames(m_idat_A, "Address_ID", "AddressA_ID")
   setnames(m_idat_A, "Red_Mean", "A_Red_Mean")
   setnames(m_idat_A, "Red_SD", "A_Red_SD")
   setnames(m_idat_A, "Red_NBeads", "A_Red_NBeads")
@@ -47,7 +47,7 @@ annotate_manifest_with_idat <- function(manifest, idat) {
   setkey(m_idat_A, AddressB_ID)
   m_idat_AB <- idat_intensities[m_idat_A]
   
-  setnames(m_idat_AB, "Name", "AddressB_ID")
+  setnames(m_idat_AB, "Address_ID", "AddressB_ID")
   setnames(m_idat_AB, "Red_Mean", "B_Red_Mean")
   setnames(m_idat_AB, "Red_SD", "B_Red_SD")
   setnames(m_idat_AB, "Red_NBeads", "B_Red_NBeads")

@@ -4,9 +4,11 @@
 #' @param top_n Only take `top_n` rows, if `0` (default), take all rows
 #' 
 #' @export
-call_alleles <- function(d_lst, 
-                         cutoff, 
-                         nc_int_thres, nc_snr_thres, nc_sd_thres, nc_nbeads_thres) {
+call_alleles <- function(d_lst, cutoff, 
+                         nc_int_thres = NULL, 
+                         nc_snr_thres = NULL, 
+                         nc_sd_thres = NULL, 
+                         nc_nbeads_thres = NULL) {
   
   stopifnot(!missing(d_lst))
   stopifnot(!missing(cutoff))
@@ -39,19 +41,19 @@ call_alleles <- function(d_lst,
     
   }
   
-  if (missing(nc_int_thres) || is.null(nc_int_thres)) {
+  if (is.null(nc_int_thres)) {
     nc_int_thres <- -1
   }
   
-  if (missing(nc_snr_thres) || is.null(nc_snr_thres)) {
+  if (is.null(nc_snr_thres)) {
     nc_snr_thres <- -1
   }
   
-  if (missing(nc_sd_thres) || is.null(nc_sd_thres)) {
+  if (is.null(nc_sd_thres)) {
     nc_sd_thres <- -1
   }
   
-  if (missing(nc_nbeads_thres) || is.null(nc_nbeads_thres)) {
+  if (is.null(nc_nbeads_thres)) {
     nc_nbeads_thres <- -1
   }
   

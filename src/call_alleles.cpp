@@ -22,6 +22,70 @@ struct ABAlleleHash {
   }
 };
 
+DataFrame convert_table_to_df(std::unordered_map<ABAllele, int> table) {
+  size_t n = table.size();
+  size_t i = 0;
+  
+  CharacterVector allele(n);
+  IntegerVector count(n);
+  
+  for (auto it = table.begin(); it != table.end(); ++it) {
+    ABAllele a = it->first;
+    
+    if (a == ABAllele::AA) allele[i] = "AA";
+    else if (a == ABAllele::BB) allele[i] = "BB";
+    else if (a == ABAllele::AB) allele[i] = "AB";
+    else if (a == ABAllele::NC) allele[i] = "NC";
+    else if (a == ABAllele::NA) allele[i] = "NA";
+    else allele[i] = "UNKNOWN";
+    
+    count[i] = it->second;
+    
+    ++i;
+  }
+  
+  DataFrame df = DataFrame::create(Named("Call") = allele, 
+                                   Named("n") = count);
+  return df;
+}
+
+DataFrame convert_table_to_df(std::unordered_map<std::pair<ABAllele, ABAllele>, int, ABAlleleHash> table) {
+  size_t n = table.size();
+  size_t i = 0;
+  
+  CharacterVector naive_allele(n);
+  CharacterVector gs_allele(n);
+  IntegerVector count(n);
+  
+  for (auto it = table.begin(); it != table.end(); ++it) {
+    ABAllele naive_a = it->first.first;
+    ABAllele gs_a = it->first.second;
+    
+    if (naive_a == ABAllele::AA) naive_allele[i] = "AA";
+    else if (naive_a == ABAllele::BB) naive_allele[i] = "BB";
+    else if (naive_a == ABAllele::AB) naive_allele[i] = "AB";
+    else if (naive_a == ABAllele::NC) naive_allele[i] = "NC";
+    else if (naive_a == ABAllele::NA) naive_allele[i] = "NA";
+    else naive_allele[i] = "UNKNOWN";
+    
+    if (gs_a == ABAllele::AA) gs_allele[i] = "AA";
+    else if (gs_a == ABAllele::BB) gs_allele[i] = "BB";
+    else if (gs_a == ABAllele::AB) gs_allele[i] = "AB";
+    else if (gs_a == ABAllele::NC) gs_allele[i] = "NC";
+    else if (gs_a == ABAllele::NA) gs_allele[i] = "NA";
+    else gs_allele[i] = "UNKNOWN";
+    
+    count[i] = it->second;
+    
+    ++i;
+  }
+  
+  DataFrame df = DataFrame::create(Named("NaiveCall") = naive_allele,
+                                   Named("GSCall") = gs_allele, 
+                                   Named("n") = count);
+  return df;
+}
+
 // [[Rcpp::plugins("cpp11")]]
 
 // [[Rcpp::export]]
@@ -45,6 +109,7 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
   
   std::unordered_map<std::pair<ABAllele, ABAllele>, int, ABAlleleHash> table_compare_naive_gs;
 
+  // FIXME: RcppParallel?
   for (size_t i = 0; i < n; ++i) {
     DataFrame d = d_lst[i];
     size_t n_d = d.nrow();
@@ -155,7 +220,7 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       
       if (use_int_thres && ab_min < nc_int_thres) {
         naive_call = ABAllele::NC;
-      } else if (use_snr_thres && snr_min < nc_snr_thres) { // FIXME: SNR min?
+      } else if (use_snr_thres && snr_min < nc_snr_thres) { 
         naive_call = ABAllele::NC;
       } else if (use_sd_thres && sd_max < nc_sd_thres) {
         naive_call = ABAllele::NC;
@@ -187,12 +252,11 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
     
     
   }
-  
-  
+
   List ans = List::create(
-    Named("table_naive") = table_naive, 
-    Named("table_gs") = table_gs, 
-    Named("table_compare_naive_gs") = table_compare_naive_gs 
+    Named("table_naive") = convert_table_to_df(table_naive), 
+    Named("table_gs") = convert_table_to_df(table_gs), 
+    Named("table_compare_naive_gs") = convert_table_to_df(table_compare_naive_gs)
   );
   
   return ans;

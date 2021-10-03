@@ -1,9 +1,26 @@
-#include <algorithm>
+#include <unordered_map>
 
 #include <Rcpp.h>
 using namespace Rcpp;
 
-enum Allele { Allele_NA, Allele_NC, Allele_AA, Allele_BB, Allele_AB };
+enum class ABAllele : char { 
+  NA = 0, 
+  NC = 1, 
+  AA = 2, 
+  BB = 3, 
+  AB = 4,
+  LAST = 5
+};
+
+// Only for pairs of std::hash-able types for simplicity.
+// You can of course template this struct to allow other hash functions
+struct ABAlleleHash {
+  std::size_t operator () (const std::pair<ABAllele, ABAllele> &p) const {
+    return static_cast<std::size_t>(p.first)
+    * static_cast<std::size_t>(ABAllele::LAST)
+    + static_cast<std::size_t>(p.second);
+  }
+};
 
 // [[Rcpp::plugins("cpp11")]]
 
@@ -23,9 +40,17 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
   
   size_t n = d_lst.size();
   
+  std::unordered_map<ABAllele, int> table_naive;
+  std::unordered_map<ABAllele, int> table_gs;
+  
+  std::unordered_map<std::pair<ABAllele, ABAllele>, int, ABAlleleHash> table_compare_naive_gs;
+
   for (size_t i = 0; i < n; ++i) {
     DataFrame d = d_lst[i];
     size_t n_d = d.nrow();
+    
+    Rcpp::CharacterVector GS_AB = d["GType"];
+    //Rcpp::CharacterVector GS_PM = d["PlusMinus"];
     
     Rcpp::CharacterVector A_base = d["Allele_A_base"];
     Rcpp::CharacterVector B_base = d["Allele_B_base"];
@@ -64,8 +89,6 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       B_sd = d["Allele_B_sig_N"];
     }
     
-    std::vector<Allele> calls(n_d);
-    
     for (size_t j = 0; j < n_d; ++j) {
       double ab_frac = AB_frac[j];
       int a = A_mean[j];
@@ -76,7 +99,7 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       int sd_max = 0;
       int nbeads_min = 0;
       
-      Allele call = Allele_NA;
+      ABAllele naive_call = ABAllele::NA;
       
       // Then, don't call
       if (A_NA[j] || B_NA[j]) {
@@ -84,7 +107,7 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       }
       
       if (ab_frac < cutoff) {
-        call = Allele_AB;
+        naive_call = ABAllele::AB;
         ab_min = (a < b) ? a : b;
         
         if (use_snr_thres) {
@@ -99,7 +122,7 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
           nbeads_min = (A_N[j] < B_N[j]) ? A_N[j] : B_N[j];
         }
       } else if (a >= b) {
-        call = Allele_AA;
+        naive_call = ABAllele::AA;
         ab_min = a;
         
         if (use_snr_thres) {
@@ -114,7 +137,7 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
           nbeads_min = A_N[j];
         }
       } else if (a < b) {
-        call = Allele_BB;
+        naive_call = ABAllele::BB;
         ab_min = b;
         
         if (use_snr_thres) {
@@ -131,23 +154,45 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       }
       
       if (use_int_thres && ab_min < nc_int_thres) {
-        call = Allele_NC;
+        naive_call = ABAllele::NC;
       } else if (use_snr_thres && snr_min < nc_snr_thres) { // FIXME: SNR min?
-        call = Allele_NC;
+        naive_call = ABAllele::NC;
       } else if (use_sd_thres && sd_max < nc_sd_thres) {
-        call = Allele_NC;
+        naive_call = ABAllele::NC;
       } else if (use_nbeads_thres && nbeads_min < nc_sd_thres) {
-        call = Allele_NC;
+        naive_call = ABAllele::NC;
       }
       
-      calls[j] = call;
+      // naive_call
+      ABAllele gs_call = ABAllele::NA;
+      
+      if (!CharacterVector::is_na(GS_AB[j])) {
+        if (GS_AB[j] == "AA") {
+          gs_call = ABAllele::AA;
+        } else if (GS_AB[j] == "BB") {
+          gs_call = ABAllele::BB;
+        } else if (GS_AB[j] == "AB") {
+          gs_call = ABAllele::AB;
+        } else if (GS_AB[j] == "NC") {
+          gs_call = ABAllele::NC;
+        }
+      }
+      
+      table_naive[naive_call] += 1;
+      table_gs[gs_call] += 1;
+      
+      std::pair<ABAllele, ABAllele> p = std::make_pair(naive_call, gs_call);
+      table_compare_naive_gs[p] += 1;
     }
     
     
   }
   
   
-  List ans = List::create(Named("a") = 0
+  List ans = List::create(
+    Named("table_naive") = table_naive, 
+    Named("table_gs") = table_gs, 
+    Named("table_compare_naive_gs") = table_compare_naive_gs 
   );
   
   return ans;

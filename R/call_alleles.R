@@ -18,6 +18,9 @@ call_alleles <- function(d_lst,
   for (d in d_lst) {
     stopifnot(is.data.frame(d))
     
+    stopifnot("GType" %in% colnames(d))
+    stopifnot("PlusMinus" %in% colnames(d))
+    
     stopifnot("Allele_A_base" %in% colnames(d))
     stopifnot("Allele_B_base" %in% colnames(d))
     

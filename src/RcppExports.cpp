@@ -10,9 +10,9 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// call_alleles_engine
-Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst, double cutoff, int nc_int_thres, double nc_snr_thres, int nc_sd_thres, int nc_nbeads_thres);
-RcppExport SEXP _snpbeadchip_call_alleles_engine(SEXP d_lstSEXP, SEXP cutoffSEXP, SEXP nc_int_thresSEXP, SEXP nc_snr_thresSEXP, SEXP nc_sd_thresSEXP, SEXP nc_nbeads_thresSEXP) {
+// call_alleles_ab_compare_engine
+Rcpp::List call_alleles_ab_compare_engine(Rcpp::ListOf<DataFrame>& d_lst, double cutoff, int nc_int_thres, double nc_snr_thres, int nc_sd_thres, int nc_nbeads_thres);
+RcppExport SEXP _snpbeadchip_call_alleles_ab_compare_engine(SEXP d_lstSEXP, SEXP cutoffSEXP, SEXP nc_int_thresSEXP, SEXP nc_snr_thresSEXP, SEXP nc_sd_thresSEXP, SEXP nc_nbeads_thresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -22,7 +22,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type nc_snr_thres(nc_snr_thresSEXP);
     Rcpp::traits::input_parameter< int >::type nc_sd_thres(nc_sd_thresSEXP);
     Rcpp::traits::input_parameter< int >::type nc_nbeads_thres(nc_nbeads_thresSEXP);
-    rcpp_result_gen = Rcpp::wrap(call_alleles_engine(d_lst, cutoff, nc_int_thres, nc_snr_thres, nc_sd_thres, nc_nbeads_thres));
+    rcpp_result_gen = Rcpp::wrap(call_alleles_ab_compare_engine(d_lst, cutoff, nc_int_thres, nc_snr_thres, nc_sd_thres, nc_nbeads_thres));
+    return rcpp_result_gen;
+END_RCPP
+}
+// call_alleles_ab_engine
+Rcpp::List call_alleles_ab_engine(Rcpp::ListOf<DataFrame>& d_lst, double cutoff, int nc_int_thres, double nc_snr_thres, int nc_sd_thres, int nc_nbeads_thres);
+RcppExport SEXP _snpbeadchip_call_alleles_ab_engine(SEXP d_lstSEXP, SEXP cutoffSEXP, SEXP nc_int_thresSEXP, SEXP nc_snr_thresSEXP, SEXP nc_sd_thresSEXP, SEXP nc_nbeads_thresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::ListOf<DataFrame>& >::type d_lst(d_lstSEXP);
+    Rcpp::traits::input_parameter< double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< int >::type nc_int_thres(nc_int_thresSEXP);
+    Rcpp::traits::input_parameter< double >::type nc_snr_thres(nc_snr_thresSEXP);
+    Rcpp::traits::input_parameter< int >::type nc_sd_thres(nc_sd_thresSEXP);
+    Rcpp::traits::input_parameter< int >::type nc_nbeads_thres(nc_nbeads_thresSEXP);
+    rcpp_result_gen = Rcpp::wrap(call_alleles_ab_engine(d_lst, cutoff, nc_int_thres, nc_snr_thres, nc_sd_thres, nc_nbeads_thres));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -40,7 +56,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_snpbeadchip_call_alleles_engine", (DL_FUNC) &_snpbeadchip_call_alleles_engine, 6},
+    {"_snpbeadchip_call_alleles_ab_compare_engine", (DL_FUNC) &_snpbeadchip_call_alleles_ab_compare_engine, 6},
+    {"_snpbeadchip_call_alleles_ab_engine", (DL_FUNC) &_snpbeadchip_call_alleles_ab_engine, 6},
     {"_snpbeadchip_channel_probe_to_alleles_engine", (DL_FUNC) &_snpbeadchip_channel_probe_to_alleles_engine, 2},
     {NULL, NULL, 0}
 };

@@ -15,14 +15,14 @@ enum class ABAllele : char {
 // Only for pairs of std::hash-able types for simplicity.
 // You can of course template this struct to allow other hash functions
 struct ABAlleleHash {
-  std::size_t operator () (const std::pair<ABAllele, ABAllele> &p) const {
+  std::size_t operator () (const std::pair<ABAllele, ABAllele>& p) const {
     return static_cast<std::size_t>(p.first)
     * static_cast<std::size_t>(ABAllele::LAST)
     + static_cast<std::size_t>(p.second);
   }
 };
 
-DataFrame convert_table_to_df(std::unordered_map<ABAllele, int> table) {
+DataFrame convert_table_to_df(std::unordered_map<ABAllele, int>& table) {
   size_t n = table.size();
   size_t i = 0;
   
@@ -49,7 +49,7 @@ DataFrame convert_table_to_df(std::unordered_map<ABAllele, int> table) {
   return df;
 }
 
-DataFrame convert_table_to_df(std::unordered_map<std::pair<ABAllele, ABAllele>, int, ABAlleleHash> table) {
+DataFrame convert_table_to_df(std::unordered_map<std::pair<ABAllele, ABAllele>, int, ABAlleleHash>& table) {
   size_t n = table.size();
   size_t i = 0;
   
@@ -88,17 +88,104 @@ DataFrame convert_table_to_df(std::unordered_map<std::pair<ABAllele, ABAllele>, 
 
 // [[Rcpp::plugins("cpp11")]]
 
+inline ABAllele call_alleles_ab(const double& ab_frac,
+                                const int& a,
+                                const int& b,
+                                const Rcpp::NumericVector& A_SNR,
+                                const Rcpp::NumericVector& B_SNR,
+                                const Rcpp::IntegerVector& A_sd, 
+                                const Rcpp::IntegerVector& B_sd, 
+                                const Rcpp::IntegerVector& A_N, 
+                                const Rcpp::IntegerVector& B_N, 
+                                const size_t& j,
+                                const double& cutoff, 
+                                const int& nc_int_thres, 
+                                const double& nc_snr_thres, 
+                                const int& nc_sd_thres, 
+                                const int& nc_nbeads_thres,
+                                const bool& use_int_thres,
+                                const bool& use_snr_thres, 
+                                const bool& use_sd_thres,
+                                const bool& use_nbeads_thres) {
+
+  int ab_min = 0;
+  double snr_min = 0.0;
+  int sd_max = 0;
+  int nbeads_min = 0;
+  
+  ABAllele call = ABAllele::NA;
+  
+  if (ab_frac < cutoff) {
+    call = ABAllele::AB;
+    ab_min = (a < b) ? a : b;
+    
+    if (use_snr_thres) {
+      snr_min = (A_SNR[j] < B_SNR[j]) ? A_SNR[j] : B_SNR[j];
+    }
+    
+    if (use_sd_thres) {
+      sd_max = (A_sd[j] > B_sd[j]) ? A_sd[j] : B_sd[j];
+    }
+    
+    if (use_nbeads_thres) {
+      nbeads_min = (A_N[j] < B_N[j]) ? A_N[j] : B_N[j];
+    }
+  } else if (a >= b) {
+    call = ABAllele::AA;
+    ab_min = a;
+    
+    if (use_snr_thres) {
+      snr_min = A_SNR[j];
+    }
+    
+    if (use_sd_thres) {
+      sd_max = A_sd[j];
+    }
+    
+    if (use_nbeads_thres) {
+      nbeads_min = A_N[j];
+    }
+  } else if (a < b) {
+    call = ABAllele::BB;
+    ab_min = b;
+    
+    if (use_snr_thres) {
+      snr_min = B_SNR[j];
+    }
+    
+    if (use_sd_thres) {
+      sd_max = B_sd[j];
+    }
+    
+    if (use_nbeads_thres) {
+      nbeads_min = B_N[j];
+    }
+  }
+  
+  if (use_int_thres && ab_min < nc_int_thres) {
+    call = ABAllele::NC;
+  } else if (use_snr_thres && snr_min < nc_snr_thres) { 
+    call = ABAllele::NC;
+  } else if (use_sd_thres && sd_max < nc_sd_thres) {
+    call = ABAllele::NC;
+  } else if (use_nbeads_thres && nbeads_min < nc_sd_thres) {
+    call = ABAllele::NC;
+  }
+  
+  return call;
+}
+
 // [[Rcpp::export]]
-Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst, 
-                               double cutoff = 3, 
-                               int nc_int_thres = -1, 
-                               double nc_snr_thres = -1.0, 
-                               int nc_sd_thres = -1.0, 
-                               int nc_nbeads_thres = -1) {
+Rcpp::List call_alleles_ab_compare_engine(Rcpp::ListOf<DataFrame>& d_lst, 
+                                          double cutoff = 3, 
+                                          int nc_int_thres = -1, 
+                                          double nc_snr_thres = -1.0, 
+                                          int nc_sd_thres = -1.0, 
+                                          int nc_nbeads_thres = -1) {
   // All columns below exists
   
   bool use_int_thres = nc_int_thres > 0;
-  bool use_snr_thres = nc_snr_thres > 0;
+  bool use_snr_thres = nc_snr_thres > 0.0;
   bool use_sd_thres = nc_sd_thres > 0;
   bool use_nbeads_thres = nc_nbeads_thres > 0;
   
@@ -135,15 +222,15 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       B_sd = d["Allele_B_sig_SD"];
     }
     
-    Rcpp::IntegerVector A_SNR;
-    Rcpp::IntegerVector B_SNR;
+    Rcpp::NumericVector A_SNR;
+    Rcpp::NumericVector B_SNR;
     if (use_snr_thres) {
       A_SNR = NumericVector(n_d);
       B_SNR = NumericVector(n_d);
       
       for (size_t j = 0; j < n_d; ++j) {
-        A_SNR[j] = A_mean[j] / A_sd[j];
-        B_SNR[j] = B_mean[j] / B_sd[j];
+        A_SNR[j] = (double)A_mean[j] / (double)A_sd[j];
+        B_SNR[j] = (double)B_mean[j] / (double)B_sd[j];
       }
     }
     
@@ -159,74 +246,23 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       int a = A_mean[j];
       int b = B_mean[j];
       
-      int ab_min = 0;
-      double snr_min = 0;
-      int sd_max = 0;
-      int nbeads_min = 0;
       
       ABAllele naive_call = ABAllele::NA;
       
       // Then, don't call
-      if (A_NA[j] || B_NA[j]) {
-        continue;
+      if (!A_NA[j] && !B_NA[j]) {
+        naive_call = call_alleles_ab(ab_frac, a, b,
+                                     A_SNR, B_SNR,
+                                     A_sd, B_sd, 
+                                     A_N, B_N, 
+                                     j,
+                                     cutoff, 
+                                     nc_int_thres, nc_snr_thres, 
+                                     nc_sd_thres, nc_nbeads_thres,
+                                     use_int_thres, use_snr_thres, 
+                                     use_sd_thres, use_nbeads_thres);
       }
       
-      if (ab_frac < cutoff) {
-        naive_call = ABAllele::AB;
-        ab_min = (a < b) ? a : b;
-        
-        if (use_snr_thres) {
-          snr_min = (A_SNR[j] < B_SNR[j]) ? A_SNR[j] : B_SNR[j];
-        }
-        
-        if (use_sd_thres) {
-          sd_max = (A_sd[j] > B_sd[j]) ? A_sd[j] : B_sd[j];
-        }
-        
-        if (use_nbeads_thres) {
-          nbeads_min = (A_N[j] < B_N[j]) ? A_N[j] : B_N[j];
-        }
-      } else if (a >= b) {
-        naive_call = ABAllele::AA;
-        ab_min = a;
-        
-        if (use_snr_thres) {
-          snr_min = A_SNR[j];
-        }
-        
-        if (use_sd_thres) {
-          sd_max = A_sd[j];
-        }
-        
-        if (use_nbeads_thres) {
-          nbeads_min = A_N[j];
-        }
-      } else if (a < b) {
-        naive_call = ABAllele::BB;
-        ab_min = b;
-        
-        if (use_snr_thres) {
-          snr_min = B_SNR[j];
-        }
-        
-        if (use_sd_thres) {
-          sd_max = B_sd[j];
-        }
-        
-        if (use_nbeads_thres) {
-          nbeads_min = B_N[j];
-        }
-      }
-      
-      if (use_int_thres && ab_min < nc_int_thres) {
-        naive_call = ABAllele::NC;
-      } else if (use_snr_thres && snr_min < nc_snr_thres) { 
-        naive_call = ABAllele::NC;
-      } else if (use_sd_thres && sd_max < nc_sd_thres) {
-        naive_call = ABAllele::NC;
-      } else if (use_nbeads_thres && nbeads_min < nc_sd_thres) {
-        naive_call = ABAllele::NC;
-      }
       
       // naive_call
       ABAllele gs_call = ABAllele::NA;
@@ -249,8 +285,6 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
       std::pair<ABAllele, ABAllele> p = std::make_pair(naive_call, gs_call);
       table_compare_naive_gs[p] += 1;
     }
-    
-    
   }
 
   List ans = List::create(
@@ -258,6 +292,113 @@ Rcpp::List call_alleles_engine(Rcpp::ListOf<DataFrame>& d_lst,
     Named("table_gs") = convert_table_to_df(table_gs), 
     Named("table_compare_naive_gs") = convert_table_to_df(table_compare_naive_gs)
   );
+  
+  return ans;
+}
+
+
+
+// [[Rcpp::export]]
+Rcpp::List call_alleles_ab_engine(Rcpp::ListOf<DataFrame>& d_lst, 
+                                  double cutoff = 3, 
+                                  int nc_int_thres = -1, 
+                                  double nc_snr_thres = -1.0, 
+                                  int nc_sd_thres = -1.0, 
+                                  int nc_nbeads_thres = -1) {
+  // All columns below exists
+  
+  bool use_int_thres = nc_int_thres > 0;
+  bool use_snr_thres = nc_snr_thres > 0.0;
+  bool use_sd_thres = nc_sd_thres > 0;
+  bool use_nbeads_thres = nc_nbeads_thres > 0;
+  
+  size_t n = d_lst.size();
+  
+  Rcpp::List ans(n);
+  
+  // FIXME: RcppParallel?
+  for (size_t i = 0; i < n; ++i) {
+    DataFrame d = d_lst[i];
+    size_t n_d = d.nrow();
+    
+    Rcpp::CharacterVector Call_AB(n_d);
+
+    Rcpp::CharacterVector A_base = d["Allele_A_base"];
+    Rcpp::CharacterVector B_base = d["Allele_B_base"];
+    
+    Rcpp::NumericVector AB_frac = d["AB_frac"];
+    
+    Rcpp::IntegerVector A_mean = d["Allele_A_sig_Mean"];
+    Rcpp::IntegerVector B_mean = d["Allele_B_sig_Mean"];
+    
+    LogicalVector A_NA = is_na(A_mean);
+    LogicalVector B_NA = is_na(B_mean);
+    
+    Rcpp::IntegerVector A_sd;
+    Rcpp::IntegerVector B_sd;
+    if (use_snr_thres || use_sd_thres) {
+      A_sd = d["Allele_A_sig_SD"];
+      B_sd = d["Allele_B_sig_SD"];
+    }
+    
+    Rcpp::NumericVector A_SNR;
+    Rcpp::NumericVector B_SNR;
+    if (use_snr_thres) {
+      A_SNR = NumericVector(n_d);
+      B_SNR = NumericVector(n_d);
+      
+      for (size_t j = 0; j < n_d; ++j) {
+        A_SNR[j] = (double)A_mean[j] / (double)A_sd[j];
+        B_SNR[j] = (double)B_mean[j] / (double)B_sd[j];
+      }
+    }
+    
+    Rcpp::IntegerVector A_N;
+    Rcpp::IntegerVector B_N;
+    if (use_nbeads_thres) {
+      A_sd = d["Allele_A_sig_N"];
+      B_sd = d["Allele_B_sig_N"];
+    }
+    
+    for (size_t j = 0; j < n_d; ++j) {
+      double ab_frac = AB_frac[j];
+      int a = A_mean[j];
+      int b = B_mean[j];
+      
+      
+      ABAllele naive_call = ABAllele::NA;
+      
+      // Then, don't call
+      if (!A_NA[j] && !B_NA[j]) {
+        naive_call = call_alleles_ab(ab_frac, a, b,
+                                     A_SNR, B_SNR,
+                                     A_sd, B_sd, 
+                                     A_N, B_N, 
+                                     j,
+                                     cutoff, 
+                                     nc_int_thres, nc_snr_thres, 
+                                     nc_sd_thres, nc_nbeads_thres,
+                                     use_int_thres, use_snr_thres, 
+                                     use_sd_thres, use_nbeads_thres);
+      }
+      
+      if (naive_call == ABAllele::AA) {
+        Call_AB[j] = "AA";
+      } else if (naive_call == ABAllele::AB) {
+        Call_AB[j] = "AB";
+      } else if (naive_call == ABAllele::BB) {
+        Call_AB[j] = "BB";
+      } else if (naive_call == ABAllele::NC) {
+        Call_AB[j] = "NC";
+      } else if (naive_call == ABAllele::NA) {
+        Call_AB[j] = "NA";
+      } else {
+        Rcpp::stop("Unexpected");
+      }
+    }
+    
+    ans[i] = Call_AB;
+  }
   
   return ans;
 }

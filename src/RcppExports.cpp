@@ -10,6 +10,21 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// to_plus_minus
+Rcpp::CharacterVector to_plus_minus(Rcpp::CharacterVector AB, Rcpp::CharacterVector SNP1, Rcpp::CharacterVector SNP2, Rcpp::CharacterVector illumina_strand, Rcpp::CharacterVector sep);
+RcppExport SEXP _snpbeadchip_to_plus_minus(SEXP ABSEXP, SEXP SNP1SEXP, SEXP SNP2SEXP, SEXP illumina_strandSEXP, SEXP sepSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type AB(ABSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type SNP1(SNP1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type SNP2(SNP2SEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type illumina_strand(illumina_strandSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type sep(sepSEXP);
+    rcpp_result_gen = Rcpp::wrap(to_plus_minus(AB, SNP1, SNP2, illumina_strand, sep));
+    return rcpp_result_gen;
+END_RCPP
+}
 // call_alleles_ab_compare_engine
 Rcpp::List call_alleles_ab_compare_engine(Rcpp::ListOf<DataFrame>& d_lst, double cutoff, int nc_int_thres, double nc_snr_thres, int nc_sd_thres, int nc_nbeads_thres);
 RcppExport SEXP _snpbeadchip_call_alleles_ab_compare_engine(SEXP d_lstSEXP, SEXP cutoffSEXP, SEXP nc_int_thresSEXP, SEXP nc_snr_thresSEXP, SEXP nc_sd_thresSEXP, SEXP nc_nbeads_thresSEXP) {
@@ -56,6 +71,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_snpbeadchip_to_plus_minus", (DL_FUNC) &_snpbeadchip_to_plus_minus, 5},
     {"_snpbeadchip_call_alleles_ab_compare_engine", (DL_FUNC) &_snpbeadchip_call_alleles_ab_compare_engine, 6},
     {"_snpbeadchip_call_alleles_ab_engine", (DL_FUNC) &_snpbeadchip_call_alleles_ab_engine, 6},
     {"_snpbeadchip_channel_probe_to_alleles_engine", (DL_FUNC) &_snpbeadchip_channel_probe_to_alleles_engine, 2},

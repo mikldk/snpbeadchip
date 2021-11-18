@@ -1,5 +1,5 @@
 Package: snpbeadchip
-Version: 0.0.0.9004
+Version: 0.0.0.9005
 Title: R Package for Analysis of Data from SNP Bead Chips
 Authors@R: c(
     person(given = "Mikkel Meyer", family = "Andersen",
@@ -19,7 +19,7 @@ License: GPL
 URL: https://github.com/mikldk/omni54manifest
 BugReports: https://github.com/mikldk/omni54manifest/issues
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 LazyData: true
 Imports: 
     data.table,

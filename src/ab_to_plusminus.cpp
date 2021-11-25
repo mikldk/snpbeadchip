@@ -1,13 +1,15 @@
-#include <unordered_map>
-
 #include <Rcpp.h>
 using namespace Rcpp;
 
+// [[Rcpp::plugins("cpp11")]]
+
+#include "common.h"
+
 // [[Rcpp::export]]
-Rcpp::CharacterVector to_plus_minus(Rcpp::CharacterVector AB,
+Rcpp::CharacterVector to_plus_minus_engine(Rcpp::CharacterVector AB,
                                     Rcpp::CharacterVector SNP1,
                                     Rcpp::CharacterVector SNP2,
-                                    Rcpp::CharacterVector illumina_strand,
+                                    Rcpp::CharacterVector ref_strand,
                                     Rcpp::CharacterVector sep
                                     ) {
   if (sep.size() != 1) {
@@ -26,10 +28,9 @@ Rcpp::CharacterVector to_plus_minus(Rcpp::CharacterVector AB,
     Rcpp::stop("SNP2.size() != SNP1.size()");
   }
   
-  if (illumina_strand.size() != n) {
-    Rcpp::stop("illumina_strand.size() != SNP1.size()");
+  if (ref_strand.size() != n) {
+    Rcpp::stop("ref_strand.size() != SNP1.size()");
   }
-  
   
   Rcpp::CharacterVector ans(n);
   
@@ -37,10 +38,9 @@ Rcpp::CharacterVector to_plus_minus(Rcpp::CharacterVector AB,
     std::string a1 = as<std::string>(SNP1[i]);
     std::string a2 = as<std::string>(SNP2[i]);
     
-    if (illumina_strand[i] == "TOP") {
-      std::string tmp = a1;
-      a1 = a2;
-      a2 = tmp;
+    if (ref_strand[i] == "-") {
+      a1 = compl_base(a1);
+      a2 = compl_base(a2);
     }
     
     std::string AB_field = as<std::string>(AB[i]);

@@ -6,6 +6,8 @@ using namespace Rcpp;
 
 // [[Rcpp::plugins("cpp11")]]
 
+#include "common.h"
+
 inline bool is_base_colour_red(std::string base) {
   if (base == "A" || base == "T") {
     return true;
@@ -13,23 +15,6 @@ inline bool is_base_colour_red(std::string base) {
   
   return false; // Grn
 } 
-
-
-inline std::string compl_base(std::string base) {
-  if (base == "A") {
-    return "T";
-  } else if (base == "T") {
-    return "A";
-  } else if (base == "C") {
-    return "G";
-  } else if (base == "G") {
-    return "C";
-  }
-  
-  Rcpp::print(Rcpp::wrap(base));
-  Rcpp::stop("Unknown base ^ to get complementary base of");
-} 
-
 
 inline std::string to_upper(std::string base) {
   if (base == "A" || base == "T" || base == "C" || base == "G") {

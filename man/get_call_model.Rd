@@ -7,5 +7,12 @@
 get_call_model()
 }
 \description{
-Get call model
+Note that:
+}
+\details{
+\itemize{
+\item 1 means BB
+\item 2 means AB
+\item 3 means AA
+}
 }

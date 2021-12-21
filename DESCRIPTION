@@ -27,7 +27,8 @@ Imports:
     Rcpp
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    mclust
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp

@@ -1,0 +1,130 @@
+---
+title: "introduction"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{introduction}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(snpbeadchip)
+library(data.table)
+library(mclust)
+```
+
+
+# Load data
+
+Can use `illuminaio::readIDAT()` directly, or use this package's function `read_idat_single()`.
+
+Here is a skeleton:
+
+```r
+library(data.table)
+library(omni54manifest)
+
+idat <- read_idat_single("/path/to/files/", "001_Red.idat", "002_Grn.idat")
+setnames(idat, "Name", "Address_ID")
+
+manifest <- load_manifest() # From omni54manifest
+m_idat <- annotate_manifest_with_idat(manifest, idat)
+m_idat
+```
+
+You end up with something like the included example dataset (which is just simulated data):
+
+```{r}
+data(idat_ex, package = "snpbeadchip")
+data(idat_ex)
+colnames(idat_ex)
+dim(idat_ex)
+head(idat_ex)
+```
+
+# Bookkeeping
+
+The function `channel_probe_to_alleles()` is used to select the right addresses 
+and colour channels to easier get mean signal intensity for allele `A` and `B`:
+
+
+```{r}
+d <- cbind(idat_ex, channel_probe_to_alleles(idat_ex)) 
+d$SNP1 <- substr(d$SNP, 2, 2)
+d$SNP2 <- substr(d$SNP, 4, 4)
+d <- d[, c("RsID", "SNP1", "SNP2", "RefStrand", "Allele_A_sig_Mean", "Allele_B_sig_Mean")]
+
+d_trans <- data.table(x = log(d$Allele_A_sig_Mean + 1), 
+                      y = log(d$Allele_B_sig_Mean + 1))
+```
+
+
+# Call alleles
+
+Either train own model like (not easy with this small dataset)
+
+```r
+library(mclust)
+fit <- mclust::Mclust(d_trans, G = 3, modelNames = "VVV")
+```
+
+Or use the supplied one:
+
+```{r}
+fit <- get_call_model() 
+```
+
+Then call alleles:
+
+```{r}
+pred <- predict(fit, newdata = d_trans)
+grp <- apply(pred$z, 1, which.max) 
+prb <- apply(pred$z, 1, max)
+```
+
+Convert clusters to alleles:
+
+```{r}
+grp_AB <- cluster_to_AB(grp)
+grp_PM <- to_plus_minus(grp_AB, d$SNP1, d$SNP2, d$RefStrand, sep = "")
+```
+
+
+```{r}
+table(grp_AB)
+table(grp_PM)
+table(grp_AB, grp_PM)
+```
+
+Want to impose a threshold?
+
+```{r}
+grp_PM_NC <- ifelse(prb < 0.99, "NC", grp_PM)
+sum(grp_PM_NC == "NC")
+mean(grp_PM_NC == "NC")
+table(grp_PM_NC)
+```
+
+Inspect information for certain posterior probability:
+
+```{r}
+d_pred <- d
+d_pred$prob <- prb
+d_pred$PM <- grp_PM
+d_pred[prob < 0.8, ]
+
+idat_ex_pred <- idat_ex
+idat_ex_pred$prob <- prb
+idat_ex_pred$PM <- grp_PM
+idat_ex_pred[prob < 0.8, ]
+```
+
+
+

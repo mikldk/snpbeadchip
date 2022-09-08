@@ -1,5 +1,5 @@
 Package: snpbeadchip
-Version: 0.0.0.9006
+Version: 0.0.0.9007
 Title: R Package for Analysis of Data from SNP Bead Chips
 Authors@R: c(
     person(given = "Mikkel Meyer", family = "Andersen",
@@ -28,7 +28,10 @@ Imports:
 Suggests: 
     knitr,
     rmarkdown,
-    mclust
+    mclust,
+    ggplot2,
+    hexbin,
+    mixtools
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp

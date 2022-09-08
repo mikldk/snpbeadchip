@@ -1,5 +1,5 @@
 ---
-title: "introduction"
+title: "Introduction"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{introduction}
@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 library(snpbeadchip)
 library(data.table)
 library(mclust)
+library(ggplot2)
 ```
 
 
@@ -127,4 +128,50 @@ idat_ex_pred[prob < 0.8, ]
 ```
 
 
+# Visualisation
+
+```{r}
+alpha <- 0.9
+elipses <- do.call(rbind, lapply(seq_len(fit$G), function(j) {
+      
+    mu <- fit$parameters$mean[, j]
+    S <- fit$parameters$variance$sigma[,,j]
+    
+    mat <- mixtools::ellipse(mu = mu, sigma = S, 
+                               alpha = 1 - alpha, 
+                               npoints = 250, 
+                               newplot = FALSE,
+                               draw = FALSE)
+    colnames(mat) <- c("x", "y")
+    mat <- as.data.frame(mat)
+    mat$grp <- c("BB", "AB", "AA")[j]
+    mat
+}))
+```
+
+```{r}
+ggplot(d_pred, aes(log(Allele_A_sig_Mean + 1), 
+                   log(Allele_B_sig_Mean + 1))) + 
+  geom_hex() +
+  geom_path(aes(x = x, y = y, group = grp, color = grp), 
+            size = 1, alpha = 1, data = elipses) 
+```
+
+## Concordance
+
+We imagine we had the whole-genome sequencing result:
+
+```{r}
+set.seed(1)
+d_pred$WGS <- d_pred$PM
+d_pred$WGS[sample(seq_along(d_pred$WGS), 100)] <- d_pred$WGS[sample(seq_along(d_pred$WGS), 100)]
+
+d_pred_tmp <- as.data.frame(xtabs(~ WGS + PM, d_pred))
+```
+
+```{r}
+ggplot(d_pred_tmp, aes(WGS, PM)) +
+  geom_tile(aes(fill = Freq)) + 
+  scale_fill_gradient(low = "lightgrey", high = "red", na.value = NA)
+```
 
